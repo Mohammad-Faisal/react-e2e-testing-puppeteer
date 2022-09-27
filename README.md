@@ -310,6 +310,10 @@ We learned how to navigate to a page, find an element, and emulate user actions 
 
 We also learned how to use the beforeAll and afterAll hooks to setup and teardown the browser.
 
+## Repository:
+
+[react-e2e-testing-puppeteer](https://github.com/Mohammad-Faisal/react-e2e-testing-puppeteer)
+
 ## Resources
 
 - [Puppeteer](https://pptr.dev/)
