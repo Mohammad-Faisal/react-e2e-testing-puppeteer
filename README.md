@@ -1,70 +1,316 @@
-# Getting Started with Create React App
+Today we will learn how to do end-to-end testing with Jest and Puppeteer in a ReactJS application.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Create the boilerplate project
 
-## Available Scripts
+First, we need to create a new ReactJS project. We will use the create-react-app tool to do that.
 
-In the project directory, you can run:
+```bash
+npx create-react-app e2e-react --language typescript
+```
 
-### `npm start`
+## Setup with Create react app
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+To setup Puppeteer with Create React App, we need to install the following dependencies:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```bash
+npm install --save-dev jest-puppeteer puppeteer
+```
 
-### `npm test`
+And add the following script to the package.json file:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```json
+"scripts": {
+  "test": "react-scripts test --env=jsdom --watchAll=false"
+}
+```
 
-### `npm run build`
+And that's it! We are ready to start writing our tests.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Other ReactJS/NodeJS projects
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+We will need to install the following dependencies:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- Jest - Our test runner
+- Puppeteer - Our browser automation tool
+- Jest-Puppeteer - A Jest plugin to run Puppeteer tests
 
-### `npm run eject`
+Run the following command to install them:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+cd e2e-react
+npm install --save jest puppeteer jest-puppeteer
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Configure Jest
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Then first we need to add the jest configuration file. Create a file called jest.config.js in the root of the project and add the following content:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```js
+module.exports = {
+  preset: "jest-puppeteer",
+  testMatch: ["**/tests/**/*.test.js"],
+  verbose: true,
+};
+```
 
-## Learn More
+Here we are telling Jest to use the jest-puppeteer preset and to look for tests in the tests folder.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Then we need to add the following script to the package.json file:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```json
+"scripts": {
+  "test": "jest"
+}
+```
 
-### Code Splitting
+## Configure Puppeteer
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Then, we need to create a new file called jest-puppeteer.config.js in the root of the project. This file will contain the configuration for Puppeteer.
 
-### Analyzing the Bundle Size
+```js
+module.exports = {
+  launch: {
+    headless: process.env.HEADLESS !== "false",
+    slowMo: process.env.SLOWMO ? parseInt(process.env.SLOWMO, 10) : 0,
+    devtools: process.env.DEVTOOLS === "true",
+    product: "chrome",
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-accelerated-2d-canvas",
+      "--disable-gpu",
+      "--window-size=1920,1080",
+    ],
+  },
+};
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Here we are telling Puppeteer to run in headless mode, to not use the sandbox, to disable the GPU and to set the window size to 1920x1080.
 
-### Making a Progressive Web App
+We are also telling puppeteer to use the Chrome browser. If you want to use the Firefox browser, you can change the `product` property to `firefox`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+We can also set the slowMo option to slow down the execution of the tests. This is useful to see what is happening in the browser.
 
-### Advanced Configuration
+We can set this option by setting the SLOWMO environment variable. For example, to set the slowMo to 100ms, we can run the following command:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+```bash
+SLOWMO=100 npm test
+```
 
-### Deployment
+## Create the test
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+We will create a simple test that will open the browser, navigate to the Google homepage, and search for the word "puppeteer".
 
-### `npm run build` fails to minify
+```javascript
+// __tests__/google.test.js
+const puppeteer = require("puppeteer");
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+describe("Google", () => {
+  let browser;
+  let page;
+
+  beforeAll(async () => {
+    browser = await puppeteer.launch();
+    page = await browser.newPage();
+  });
+
+  afterAll(async () => {
+    await browser.close();
+  });
+
+  it('should display "google" text on page', async () => {
+    await page.goto("https://google.com");
+    await page.waitForSelector('input[title="Search"]');
+    await page.type('input[title="Search"]', "puppeteer");
+    await page.keyboard.press("Enter");
+    await page.waitForNavigation();
+    const html = await page.$eval("body", (e) => e.innerHTML);
+    expect(html).toMatch("puppeteer");
+  });
+});
+```
+
+So this was a generic example of how to use Puppeteer with Jest. You can use this as a starting point to write your own tests.
+
+Now let's focus on a real-world example.
+
+## Real-world example
+
+We will create a form that will allow a user to log in. The form will have two fields: username and password. Let's create the form component.
+
+```jsx
+// src/components/LoginForm.tsx
+import React, { useState } from "react";
+
+export const Login = () => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log("Username: " + username + " Password: " + password);
+    setIsLoggedIn((prev) => !prev);
+  };
+
+  return (
+    <div>
+      <h1 id="page-title">{isLoggedIn ? "Logged In" : "Login"}</h1>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label htmlFor="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </div>
+        <button type="submit" id="btn-submit">
+          Login
+        </button>
+      </form>
+    </div>
+  );
+};
+```
+
+Notice when the user clicks the submit button the text "Logged In" will be displayed. This is because we are using the useState hook to set the isLoggedIn state to true.
+
+Now let's create the test. Create a new test file called login.test.js in the tests folder.
+
+First import the launch function from the jest-puppeteer package.
+
+```js
+const launch = require("puppeteer").launch;
+```
+
+Then setup the beforeAll and afterAll hooks.
+
+```js
+beforeAll(async () => {
+  browser = await launch({
+    headless: false,
+    slowMo: 100,
+    devtools: true,
+  });
+  page = await browser.newPage();
+});
+
+afterAll(async () => {
+  await browser.close();
+});
+```
+
+Here we are telling Puppeteer to run in headless mode and to set the slowMo to 100ms.
+
+Then we need to create a test that will check if the login form is displayed.
+
+```js
+it("should display the login form", async () => {
+  await page.goto("http://localhost:3000");
+  await page.waitForSelector("#page-title");
+  const pageTitle = await page.$eval("#page-title", (e) => e.innerHTML);
+  expect(pageTitle).toMatch("Login");
+});
+```
+
+This test will navigate to the root of the application, wait for the page title to be displayed, and then check if the page title is "Login".
+
+Now let's create a test that will check if the user can log in.
+
+```js
+it("should allow the user to log in", async () => {
+  await page.goto("http://localhost:3000");
+  await page.waitForSelector("#username");
+  await page.type("#username", "test");
+  await page.type("#password", "test");
+  await page.click("#btn-submit");
+  await page.waitForSelector("#page-title");
+  const pageTitle = await page.$eval("#page-title", (e) => e.innerHTML);
+  expect(pageTitle).toMatch("Logged In");
+});
+```
+
+To find a particular item on the screen:
+
+    ```js
+    await page.waitForSelector("#username");
+    ```
+
+Here username is the id field of the input element.
+
+Also we can emulate user action like typing and clicking.
+
+```js
+await page.type("#username", "test");
+await page.type("#password", "test");
+await page.click("#btn-submit");
+```
+
+This test will navigate to the root of the application, wait for the username field to be displayed, type the username and password, click the submit button, wait for the page title to be displayed, and then check if the page title is "Logged In".
+
+The final code for the test is as follows:
+
+```js
+// __tests__/login.test.js
+
+const launch = require("puppeteer").launch;
+
+describe("Login", () => {
+  let browser;
+  let page;
+
+  beforeAll(async () => {
+    browser = await launch({
+      headless: false,
+      slowMo: 100,
+      devtools: true,
+    });
+    page = await browser.newPage();
+  });
+
+  afterAll(async () => {
+    await browser.close();
+  });
+
+  it("should display the login form", async () => {
+    await page.goto("http://localhost:3000");
+    await page.waitForSelector("#page-title");
+    const pageTitle = await page.$eval("#page-title", (e) => e.innerHTML);
+    expect(pageTitle).toMatch("Login");
+  });
+
+  it("should allow the user to log in", async () => {
+    await page.goto("http://localhost:3000");
+    await page.waitForSelector("#username");
+    await page.type("#username", "test");
+    await page.type("#password", "test");
+    await page.click("#btn-submit");
+    await page.waitForSelector("#page-title");
+    const pageTitle = await page.$eval("#page-title", (e) => e.innerHTML);
+    expect(pageTitle).toMatch("Logged In");
+  });
+});
+```
+
+## Conclusion
+
+In this article, we learned how to use Puppeteer with Jest. We also created a real-world example that will allow us to test a login form.
+
+We learned how to navigate to a page, find an element, and emulate user actions like typing and clicking.
+
+We also learned how to use the beforeAll and afterAll hooks to setup and teardown the browser.
+
+## Resources
+
+- [Puppeteer](https://pptr.dev/)
+- [Jest](https://jestjs.io/)
